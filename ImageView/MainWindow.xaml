@@ -1,0 +1,67 @@
+﻿<Window x:Class="ImageView.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:ImageView"
+        mc:Ignorable="d"
+
+        Title="MainWindow" Height="450" Width="800">
+    <Grid PreviewDrop="Grid_PreviewDrop"  AllowDrop="True">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="35"/>
+        </Grid.RowDefinitions>
+        <Grid Name="grid1" Grid.Row="0" 
+              >
+            <ScrollViewer x:Name="scrollView" Grid.Row="0" Background="Gray" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"
+                          
+                          PreviewKeyDown="imageAnalysis_KeyDown"
+                          
+                          PreviewMouseMove="scrollView_PreviewMouseMove"                          
+                          PreviewMouseLeftButtonDown="scrollView_PreviewMouseLeftButtonDown"
+                          PreviewMouseLeftButtonUp="scrollView_PreviewMouseLeftButtonUp"
+                          PreviewMouseWheel="scrollView_PreviewMouseWheel"
+                          >
+                
+                    <Canvas x:Name="canvasAnalysis" Margin="0" Grid.RowSpan="3" Cursor="Cross" >
+
+                        <Image 
+                            x:Name="imageAnalysis" 
+                            Margin="0"  
+                            Stretch="Uniform"
+                            PreviewMouseDown="ImageAnalysis_MouseDown"
+                            PreviewMouseUp="ImageAnalysis_MouseUp"
+                            PreviewMouseMove="ImageAnalysis_MouseMove"
+                            PreviewKeyDown="imageAnalysis_KeyDown"
+                            
+                            Cursor="Cross" 
+                            Canvas.Left="0" 
+                            Canvas.Top="0" 
+                            SizeChanged="ImageAnalysis_SizeChanged" 
+                            ClipToBounds="False" 
+                            SnapsToDevicePixels="True"
+                            RenderOptions.BitmapScalingMode="NearestNeighbor"   
+                        
+                            VerticalAlignment="Center"
+                            HorizontalAlignment="Center"
+                            >
+        
+                        </Image>      
+                        <Line x:Name="vcross" X1="0" Y1="100" X2="0" Y2="120" Stroke="Yellow" StrokeThickness="1"/>
+                        <Line x:Name="hcross" X1="100" Y1="0" X2="120" Y2="0" Stroke="Yellow" StrokeThickness="1"/>                        
+                
+                </Canvas>
+            </ScrollViewer>
+            <Line x:Name="vcross1" X1="0" Y1="0" X2="0" Y2="100000" Stroke="Red" StrokeThickness="1" Opacity="0.5"/>
+            <Line x:Name="hcross1" X1="0" Y1="0" X2="100000" Y2="0" Stroke="Red" StrokeThickness="1" Opacity="0.5"/>
+        </Grid>
+        <StatusBar Grid.Row="1" >
+            <Label Name="SizeString" Width="150"/>
+            <Label Name="PtSting" Width="300"/>
+            <Label Name="ZoomString"/>
+        </StatusBar>
+    </Grid>
+
+    
+</Window>
