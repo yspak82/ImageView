@@ -6,7 +6,10 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-
+using System.Linq;
+using NaturalSort.Extension;
+using openCV = OpenCvSharp;
+using OpenCvSharp.WpfExtensions;
 
 namespace ImageView
 {
@@ -16,14 +19,16 @@ namespace ImageView
     public partial class MainWindow : Window
     {
         
-        BitmapImage bitmapImage;
+        //BitmapImage bitmapImage;
         byte[] buffer;
         int bufferStride;
         float scale = 100;
         Point rightDownPt = new Point(0, 0);
         Point leftDownPt = new Point(0, 0);
         int bit;
-
+        string[] fileList;
+        int fileIndex = 0;
+        openCV.Mat image;
         public MainWindow()
         {
 
@@ -46,19 +51,81 @@ namespace ImageView
         }
         private void LoadImage(string filePath)
         {
-            this.bitmapImage = new BitmapImage(new Uri(filePath));
-            WriteableBitmap wb = new WriteableBitmap(this.bitmapImage);
+            string[] extensions = new[] { ".jpg", ".jpeg", ".png",".bmp",".tif" };
+            DirectoryInfo dInfo = new DirectoryInfo(Path.GetDirectoryName(filePath));
+            FileInfo[] files = dInfo.GetFiles().Where(f => extensions.Contains(f.Extension.ToLower())).ToArray();            
+            //this.fileLidst = Directory.GetFiles(Path.GetDirectoryName(filePath), "*.jpg|*.jpeg|*.png|*.bmp|*.tif|*.gif");
+            this.fileList = files.Select(g => g.FullName).OrderBy(x=>x, StringComparison.OrdinalIgnoreCase.WithNaturalSort()).ToArray();
+            
+
+            this.fileIndex = Array.IndexOf(fileList, filePath);
+
+            DisplayImage(filePath);
+        }
+        private void DisplayImage(string filePath)
+        {
+            this.Title = $"ImageView - {filePath}";
+            image = openCV.Cv2.ImRead(filePath, openCV.ImreadModes.Unchanged);
+            var angle = int.Parse(Angle.Content.ToString());
+            RotateImage(angle);
+            //var bitmap = BitmapSourceConverter.ToBitmapSource(image);
+
+            ////var bitmapImage = new BitmapImage(new Uri(filePath));
+            //WriteableBitmap wb = new WriteableBitmap(bitmap);
+            //this.buffer = new byte[wb.BackBufferStride * wb.PixelHeight];
+            //this.bufferStride = wb.BackBufferStride;
+            //wb.CopyPixels(buffer, this.bufferStride, 0);
+            //this.bit = this.bufferStride / wb.PixelWidth * 8;
+
+
+            ////this.bufferStride = (int)image.Step();
+            ////this.buffer = new byte[image.Rows * bufferStride];
+
+            //////wb.CopyPixels(buffer, this.bufferStride, 0);
+            //////image.GetArray(out this.buffer);
+            ////this.buffer = image.ToBytes(".jpg", new int[] { 0 });
+
+            ////this.bit = this.bufferStride / image.Width * 8;
+
+            //SizeString.Content = string.Format("{0} x {1} {2} bit", this.image.Width, this.image.Height, this.bit);
+
+            //imageAnalysis.Source = bitmap;
+            //scrollView.Focus();
+        }
+        private void RotateImage(int angle)
+        {
+            if (angle == 90 )
+                openCV.Cv2.Rotate(image, image, openCV.RotateFlags.Rotate90Clockwise);
+            else if (angle == 180)
+                openCV.Cv2.Rotate(image, image, openCV.RotateFlags.Rotate180);
+            else if (angle == 270)
+                openCV.Cv2.Rotate(image, image, openCV.RotateFlags.Rotate90Counterclockwise);
+
+
+            var bitmap = BitmapSourceConverter.ToBitmapSource(image);
+
+            //var bitmapImage = new BitmapImage(new Uri(filePath));
+            WriteableBitmap wb = new WriteableBitmap(bitmap);
             this.buffer = new byte[wb.BackBufferStride * wb.PixelHeight];
             this.bufferStride = wb.BackBufferStride;
             wb.CopyPixels(buffer, this.bufferStride, 0);
-
             this.bit = this.bufferStride / wb.PixelWidth * 8;
 
-            SizeString.Content = string.Format("{0} x {1} {2} bit", this.bitmapImage.PixelWidth, this.bitmapImage.PixelHeight, this.bit);
-            
-            imageAnalysis.Source = bitmapImage;
-        }
 
+            //this.bufferStride = (int)image.Step();
+            //this.buffer = new byte[image.Rows * bufferStride];
+
+            ////wb.CopyPixels(buffer, this.bufferStride, 0);
+            ////image.GetArray(out this.buffer);
+            //this.buffer = image.ToBytes(".jpg", new int[] { 0 });
+
+            //this.bit = this.bufferStride / image.Width * 8;
+
+            SizeString.Content = string.Format("{0} x {1} {2} bit", this.image.Width, this.image.Height, this.bit);
+
+            imageAnalysis.Source = bitmap;
+            scrollView.Focus();
+        }
         private void ScrollView_ScrollChanged(object sender, ScrollChangedEventArgs e)
         {
             DrawCross(this.rightDownPt.X, this.rightDownPt.Y, this.scale);
@@ -79,7 +146,7 @@ namespace ImageView
 
             if (e.RightButton == MouseButtonState.Pressed)
             {
-                this.rightDownPt = ConvertPoint(img.ActualWidth, img.ActualHeight, pt.X, pt.Y, bitmapImage.PixelWidth, bitmapImage.PixelHeight);
+                this.rightDownPt = ConvertPoint(img.ActualWidth, img.ActualHeight, pt.X, pt.Y, this.image.Width, image.Height);
                 DrawCross(this.rightDownPt.X, this.rightDownPt.Y, this.scale);
 
             }
@@ -93,7 +160,7 @@ namespace ImageView
             var pt = e.GetPosition((IInputElement)sender);
 
 
-            var realPt = ConvertPoint(img.ActualWidth, img.ActualHeight, pt.X, pt.Y, bitmapImage.PixelWidth, bitmapImage.PixelHeight);
+            var realPt = ConvertPoint(img.ActualWidth, img.ActualHeight, pt.X, pt.Y, this.image.Width, image.Height);
             var x = realPt.X;
             var y = realPt.Y;
 
@@ -137,35 +204,83 @@ namespace ImageView
         {
             this.scale = ChangeScale(this.scale, e.Delta);
 
+            UpdateScale();
+        }
 
+        private void UpdateScale()
+        {
             ZoomString.Content = string.Format("{0}%", this.scale);
 
             DrawCross(this.rightDownPt.X, this.rightDownPt.Y, this.scale);
 
             var delta = this.scale / 100;
-            imageAnalysis.Width = bitmapImage.PixelWidth * delta;
+            var oldW = imageAnalysis.Width.ToString() == double.NaN.ToString() ? this.image.Width : imageAnalysis.Width;
+            imageAnalysis.Width = this.image.Width * delta;
+            var newW = imageAnalysis.Width;
+            var ratio = newW / oldW;
+
+
+
+            var w = this.scrollView.HorizontalOffset * ratio + (this.scrollView.ViewportWidth * ratio - this.scrollView.ViewportWidth) / 2;
+            var h = this.scrollView.VerticalOffset * ratio + (this.scrollView.ViewportHeight * ratio - this.scrollView.ViewportHeight) / 2;
+
+            this.scrollView.ScrollToHorizontalOffset(w);
+            this.scrollView.ScrollToVerticalOffset(h);
+        }
+        public string HelpString { 
+            get 
+            {
+                return "앞으로: X \n" +
+                    "뒤로: Z \n" +
+                    "확대/축소: +,-,마우스휠 \n" +
+                    "이동: 화살표, 마우스 좌클릭+이동" +
+                    "회전: R" +
+                    "";
+            }  
         }
 
-        
 
         private void imageAnalysis_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.Key == Key.Add)
             {
                 this.scale = ChangeScale(this.scale, 1);
+                UpdateScale();
             }
             else if (e.Key == Key.Subtract)
             {
                 this.scale = ChangeScale(this.scale, -1);
+                UpdateScale();
+            }
+            else if (e.Key == Key.Z)
+            {
+                if (this.fileIndex == 0)
+                    this.fileIndex = this.fileList.Length;
+                var file = fileList[--this.fileIndex];
+                DisplayImage(file);
+            }
+            else if (e.Key == Key.X)
+            {
+                if (this.fileIndex == this.fileList.Length - 1)
+                    this.fileIndex = 0;
+                var file = fileList[++this.fileIndex];
+                DisplayImage(file);
+            }
+            else if (e.Key == Key.R)
+            {
+                var angle = int.Parse(Angle.Content.ToString()) +90;
+                angle = angle == 360 ? 0 : angle;
+                Angle.Content = angle.ToString();
+                RotateImage(90);
             }
 
-            ZoomString.Content = string.Format("{0}%", this.scale);
+                ZoomString.Content = string.Format("{0}%", this.scale);
 
             var delta = this.scale / 100;
 
             DrawCross(this.rightDownPt.X, this.rightDownPt.Y, this.scale);
 
-            imageAnalysis.Width = bitmapImage.PixelWidth * delta;
+            imageAnalysis.Width = this.image.Width * delta;
         }
 
         private float ChangeScale(float scale, int delta, int min = 10, int max = 1000)
