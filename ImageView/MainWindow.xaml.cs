@@ -10,6 +10,8 @@ using System.Linq;
 using NaturalSort.Extension;
 using openCV = OpenCvSharp;
 using OpenCvSharp.WpfExtensions;
+using Microsoft.Win32;
+using System.Diagnostics;
 
 namespace ImageView
 {
@@ -29,13 +31,15 @@ namespace ImageView
         string[] fileList;
         int fileIndex = 0;
         openCV.Mat image;
+        string fileName = string.Empty;
         public MainWindow()
         {
 
             InitializeComponent();
-            this.Loaded += MainWindow_Loaded;
+            
 
         }
+        
 
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
@@ -47,7 +51,9 @@ namespace ImageView
             imageAnalysis.SizeChanged += ImageAnalysis_SizeChanged;
             scrollView.ScrollChanged += ScrollView_ScrollChanged;
 
-
+            var args = Environment.GetCommandLineArgs();
+            if (args.Length > 1)
+                LoadImage(args[1]);
         }
         private void LoadImage(string filePath)
         {
@@ -55,42 +61,24 @@ namespace ImageView
             DirectoryInfo dInfo = new DirectoryInfo(Path.GetDirectoryName(filePath));
             FileInfo[] files = dInfo.GetFiles().Where(f => extensions.Contains(f.Extension.ToLower())).ToArray();            
             //this.fileLidst = Directory.GetFiles(Path.GetDirectoryName(filePath), "*.jpg|*.jpeg|*.png|*.bmp|*.tif|*.gif");
-            this.fileList = files.Select(g => g.FullName).OrderBy(x=>x, StringComparison.OrdinalIgnoreCase.WithNaturalSort()).ToArray();
-            
+            this.fileList = files.Select(g => g.FullName).OrderBy(x=>x, StringComparison.OrdinalIgnoreCase.WithNaturalSort()).ToArray();            
 
             this.fileIndex = Array.IndexOf(fileList, filePath);
+            this.Angle.Content = "0";
 
             DisplayImage(filePath);
         }
         private void DisplayImage(string filePath)
         {
+            Stopwatch sw = new Stopwatch();
+            sw.Start();
             this.Title = $"ImageView - {filePath}";
+            this.fileName = Path.GetFileName(filePath);
             image = openCV.Cv2.ImRead(filePath, openCV.ImreadModes.Unchanged);
             var angle = int.Parse(Angle.Content.ToString());
             RotateImage(angle);
-            //var bitmap = BitmapSourceConverter.ToBitmapSource(image);
-
-            ////var bitmapImage = new BitmapImage(new Uri(filePath));
-            //WriteableBitmap wb = new WriteableBitmap(bitmap);
-            //this.buffer = new byte[wb.BackBufferStride * wb.PixelHeight];
-            //this.bufferStride = wb.BackBufferStride;
-            //wb.CopyPixels(buffer, this.bufferStride, 0);
-            //this.bit = this.bufferStride / wb.PixelWidth * 8;
-
-
-            ////this.bufferStride = (int)image.Step();
-            ////this.buffer = new byte[image.Rows * bufferStride];
-
-            //////wb.CopyPixels(buffer, this.bufferStride, 0);
-            //////image.GetArray(out this.buffer);
-            ////this.buffer = image.ToBytes(".jpg", new int[] { 0 });
-
-            ////this.bit = this.bufferStride / image.Width * 8;
-
-            //SizeString.Content = string.Format("{0} x {1} {2} bit", this.image.Width, this.image.Height, this.bit);
-
-            //imageAnalysis.Source = bitmap;
-            //scrollView.Focus();
+            sw.Stop();
+            this.ElapsedTime.Content = $"{sw.Elapsed.TotalMilliseconds.ToString("##.##")}ms";
         }
         private void RotateImage(int angle)
         {
@@ -219,25 +207,13 @@ namespace ImageView
             var newW = imageAnalysis.Width;
             var ratio = newW / oldW;
 
-
-
             var w = this.scrollView.HorizontalOffset * ratio + (this.scrollView.ViewportWidth * ratio - this.scrollView.ViewportWidth) / 2;
             var h = this.scrollView.VerticalOffset * ratio + (this.scrollView.ViewportHeight * ratio - this.scrollView.ViewportHeight) / 2;
 
             this.scrollView.ScrollToHorizontalOffset(w);
             this.scrollView.ScrollToVerticalOffset(h);
         }
-        public string HelpString { 
-            get 
-            {
-                return "앞으로: X \n" +
-                    "뒤로: Z \n" +
-                    "확대/축소: +,-,마우스휠 \n" +
-                    "이동: 화살표, 마우스 좌클릭+이동" +
-                    "회전: R" +
-                    "";
-            }  
-        }
+
 
 
         private void imageAnalysis_KeyDown(object sender, KeyEventArgs e)
@@ -273,14 +249,34 @@ namespace ImageView
                 Angle.Content = angle.ToString();
                 RotateImage(90);
             }
+            if (Keyboard.IsKeyDown(Key.LeftCtrl) && Keyboard.IsKeyDown(Key.S))
+            {
+                if (this.image != null)
+                {
+                    SaveFileDialog sfd = new SaveFileDialog();
+                    
+                    sfd.RestoreDirectory = true;
+                    sfd.FileName = this.fileName;
+                    sfd.Filter = $"*{Path.GetExtension(this.fileName)}|*{Path.GetExtension(this.fileName)}";
+                    var trn = sfd.ShowDialog(this);
+                    if(trn != null && trn==true)
+                    {
+                        openCV.Cv2.ImWrite(sfd.FileName, this.image);
+                    }
+                }
+            }
+
+
+
+
 
                 ZoomString.Content = string.Format("{0}%", this.scale);
 
-            var delta = this.scale / 100;
+            //var delta = this.scale / 100;
 
             DrawCross(this.rightDownPt.X, this.rightDownPt.Y, this.scale);
 
-            imageAnalysis.Width = this.image.Width * delta;
+            //imageAnalysis.Width = this.image.Width * delta;
         }
 
         private float ChangeScale(float scale, int delta, int min = 10, int max = 1000)

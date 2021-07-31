@@ -5,17 +5,26 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ImageView"
         mc:Ignorable="d"
-
-        Title="ImageView" Height="450" Width="800">
+Loaded="MainWindow_Loaded"
+        Title="ImageView" Height="450" Width="800"
+        >
+    <Window.Resources>
+        <VisualBrush x:Key="MyVisualBrush" TileMode="Tile" Viewport="0,0,15,15" ViewportUnits="Absolute" Viewbox="0,0,15,15" ViewboxUnits="Absolute">
+            <VisualBrush.Visual>
+                <Grid Background="LightGray">
+                    <Path Data="M 0 15 L 15 0" Stroke="Gray" />
+                    <Path Data="M 0 0 L 15 15" Stroke="Gray" />
+                </Grid>
+            </VisualBrush.Visual>
+        </VisualBrush>
+    </Window.Resources>
     <Grid PreviewDrop="Grid_PreviewDrop"  AllowDrop="True">
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
             <RowDefinition Height="35"/>
         </Grid.RowDefinitions>
-        <Grid Name="grid1" Grid.Row="0" >
-            <Label Name="Angle" Grid.Row="0" Grid.ZIndex="1" Content="0" Opacity="0.5" Width="30" Height="30" HorizontalAlignment="Left"
-                   VerticalAlignment="Top"/>
-            <StackPanel Grid.Row="0" Grid.ZIndex="1" VerticalAlignment="Bottom" Opacity="0.5">
+        <Grid Name="grid1" Grid.Row="0" >            
+            <StackPanel Grid.Row="0" Grid.ZIndex="1" VerticalAlignment="Bottom" Opacity="0.5" Margin="10,0,0,20">
                 <TextBlock TextWrapping="Wrap"
                        HorizontalAlignment="Left" 
                    VerticalAlignment="Bottom"  
@@ -23,6 +32,10 @@
                 불러오기: 파일 드래그앤드랍
 
                 </TextBlock>
+                <TextBlock TextWrapping="Wrap"
+                       HorizontalAlignment="Left" 
+                   VerticalAlignment="Bottom" >             
+                    저장: Ctrl + S</TextBlock>
                 <TextBlock TextWrapping="Wrap"
                        HorizontalAlignment="Left" 
                    VerticalAlignment="Bottom" 
@@ -49,20 +62,19 @@
                        HorizontalAlignment="Left" 
                    VerticalAlignment="Bottom" 
                        >
-                확대/축소: +,- 또는 마우스휠
+                확대/축소: +, -, 마우스휠
 
                 </TextBlock>
 
                 <TextBlock TextWrapping="Wrap"
                        HorizontalAlignment="Left" 
-                   VerticalAlignment="Bottom" 
-                       >             
-                    이동: 화살표 또는 마우스 좌클릭+이동
+                   VerticalAlignment="Bottom" >             
+                    이동: 화살표, 마우스 좌클릭+이동</TextBlock>
 
 
-                </TextBlock>                
             </StackPanel>
-            <ScrollViewer x:Name="scrollView" Grid.Row="0" Background="Gray" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"
+            <ScrollViewer x:Name="scrollView" Grid.Row="0" Background="{StaticResource MyVisualBrush}"
+                          HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"
                           
                           PreviewKeyDown="imageAnalysis_KeyDown"
                           
@@ -70,6 +82,7 @@
                           PreviewMouseLeftButtonDown="scrollView_PreviewMouseLeftButtonDown"
                           PreviewMouseLeftButtonUp="scrollView_PreviewMouseLeftButtonUp"
                           PreviewMouseWheel="scrollView_PreviewMouseWheel"
+                          
                           >
                 
                     <Canvas x:Name="canvasAnalysis" Margin="0" Grid.RowSpan="3" Cursor="Cross" >
@@ -107,7 +120,9 @@
         <StatusBar Grid.Row="1" >
             <Label Name="SizeString" Width="150"/>
             <Label Name="PtSting" Width="300"/>
-            <Label Name="ZoomString"/>
+            <Label Name="ZoomString" Width="50"/>
+            <Label Name="Angle" Width="30" HorizontalContentAlignment="Right"/>
+            <Label Name="ElapsedTime"  HorizontalContentAlignment="Right"/>            
         </StatusBar>
     </Grid>
 
