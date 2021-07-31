@@ -10,3 +10,9 @@ WPF Image View Control
 **Move** - Mouse left down and move
 
 **Pixel** - mouse right down  
+
+**Rotate** - Key R down
+
+**Next file open** - Key down X
+
+**Before file open** - Key down Z
