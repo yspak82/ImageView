@@ -74,6 +74,11 @@ namespace ImageView
             sw.Start();
             this.Title = $"ImageView - {filePath}";
             this.fileName = Path.GetFileName(filePath);
+            if (image != null)
+            {
+                image.Dispose();
+                GC.Collect();
+            }
             image = openCV.Cv2.ImRead(filePath, openCV.ImreadModes.Unchanged);
             var angle = int.Parse(Angle.Content.ToString());
             RotateImage(angle);
@@ -91,14 +96,14 @@ namespace ImageView
 
 
             var bitmap = BitmapSourceConverter.ToBitmapSource(image);
-
+            
             //var bitmapImage = new BitmapImage(new Uri(filePath));
             WriteableBitmap wb = new WriteableBitmap(bitmap);
             this.buffer = new byte[wb.BackBufferStride * wb.PixelHeight];
             this.bufferStride = wb.BackBufferStride;
             wb.CopyPixels(buffer, this.bufferStride, 0);
             this.bit = this.bufferStride / wb.PixelWidth * 8;
-
+            
 
             //this.bufferStride = (int)image.Step();
             //this.buffer = new byte[image.Rows * bufferStride];
@@ -156,7 +161,10 @@ namespace ImageView
 
             string pixelValue = string.Format("(X:{0}, Y:{1}) ", x, y);
             while (step > 0)
-            {                
+            {
+                int index = (int)y * bufferStride + (int)(this.bit / 8 * x) + --step;
+                if (index < 0 || buffer.Length < index)
+                    continue;
                 var val = buffer[(int)y * bufferStride + (int)(this.bit / 8 * x) + --step];
                 switch (step)
                 {
