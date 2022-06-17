@@ -246,7 +246,7 @@ namespace ImageView
             else if (e.Key == Key.X)
             {
                 if (this.fileIndex == this.fileList.Length - 1)
-                    this.fileIndex = 0;
+                    this.fileIndex = -1;
                 var file = fileList[++this.fileIndex];
                 DisplayImage(file);
             }
