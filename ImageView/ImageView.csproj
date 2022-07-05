@@ -58,6 +58,9 @@
     <ErrorReport>prompt</ErrorReport>
     <Prefer32Bit>true</Prefer32Bit>
   </PropertyGroup>
+  <PropertyGroup>
+    <ApplicationIcon>crop_tool_Bdn_icon.ico</ApplicationIcon>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="FolderBrowserEx, Version=1.0.1.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>packages\FolderBrowserEx.1.0.1\lib\net47\FolderBrowserEx.dll</HintPath>
@@ -156,6 +159,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="crop_tool_Bdn_icon.ico" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">

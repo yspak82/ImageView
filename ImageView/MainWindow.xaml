@@ -75,6 +75,10 @@ Loaded="MainWindow_Loaded"
                        HorizontalAlignment="Left" 
                    VerticalAlignment="Bottom" >             
                     잘라내기: Shft + 마우스 좌클릭</TextBlock>
+                <TextBlock TextWrapping="Wrap"
+                       HorizontalAlignment="Left" 
+                   VerticalAlignment="Bottom" >             
+                    라벨변경: 숫자키</TextBlock>
 
 
             </StackPanel>
