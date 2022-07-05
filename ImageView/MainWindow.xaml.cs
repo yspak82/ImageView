@@ -12,6 +12,10 @@ using openCV = OpenCvSharp;
 using OpenCvSharp.WpfExtensions;
 using Microsoft.Win32;
 using System.Diagnostics;
+using FolderBrowserEx;
+using System.Text.RegularExpressions;
+using System.Globalization;
+
 
 namespace ImageView
 {
@@ -32,6 +36,31 @@ namespace ImageView
         int fileIndex = 0;
         openCV.Mat image;
         string fileName = string.Empty;
+        bool isPressedCtrl = false;
+        bool isPressedShift = false;
+        private static readonly IDictionary<Key, int> NumericKeys =
+            new Dictionary<Key, int> {
+        { Key.D0, 0 },
+        { Key.D1, 1 },
+        { Key.D2, 2 },
+        { Key.D3, 3 },
+        { Key.D4, 4 },
+        { Key.D5, 5 },
+        { Key.D6, 6 },
+        { Key.D7, 7 },
+        { Key.D8, 8 },
+        { Key.D9, 9 },
+        { Key.NumPad0, 0 },
+        { Key.NumPad1, 1 },
+        { Key.NumPad2, 2 },
+        { Key.NumPad3, 3 },
+        { Key.NumPad4, 4 },
+        { Key.NumPad5, 5 },
+        { Key.NumPad6, 6 },
+        { Key.NumPad7, 7 },
+        { Key.NumPad8, 8 },
+        { Key.NumPad9, 9 }
+};
         public MainWindow()
         {
 
@@ -39,10 +68,18 @@ namespace ImageView
             
 
         }
-        
+        private void TextBox_PreviewTextInput(object sender, TextCompositionEventArgs e)
+        {
+            Regex regex = new Regex("[^0-9]+");            
+            e.Handled = regex.IsMatch(e.Text);
+        }
 
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
+            cropLabel.Text = "0";
+            cropWidth.Text = "128";
+            cropHeight.Text = "128";
+            cropSaveFolderPath.Text = "";
 
             imageAnalysis.MouseWheel += ImageAnalysis_MouseWheel;
             imageAnalysis.MouseUp += ImageAnalysis_MouseUp;
@@ -136,12 +173,39 @@ namespace ImageView
             var img = (IInputElement)sender as Image;
             var pt = e.GetPosition((IInputElement)sender);
 
-
+            var realPt = ConvertPoint(img.ActualWidth, img.ActualHeight, pt.X, pt.Y, this.image.Width, image.Height);
             if (e.RightButton == MouseButtonState.Pressed)
             {
-                this.rightDownPt = ConvertPoint(img.ActualWidth, img.ActualHeight, pt.X, pt.Y, this.image.Width, image.Height);
+                this.rightDownPt = realPt;
                 DrawCross(this.rightDownPt.X, this.rightDownPt.Y, this.scale);
 
+            }
+            if(isPressedShift)
+            {
+                //cropSaveFolderPath.Text = $"{realPt.X},{realPt.Y}";
+                //Crop and SaveImage
+                string folderPath = Path.Combine(cropSaveFolderPath.Text, cropLabel.Text);
+                if (!Directory.Exists(folderPath))
+                    Directory.CreateDirectory(folderPath);
+                string timestamp = DateTime.UtcNow.ToString("yyyyMMdd-HHmmss-fff",
+                                            CultureInfo.InvariantCulture);
+                string filePath = Path.Combine(folderPath, $"{timestamp}.png");
+                int width = int.Parse(cropWidth.Text);
+                int height = int.Parse(cropHeight.Text);
+
+                if (width > 0 && height > 0)
+                {
+                    var roi = new openCV.Rect((int)realPt.X - width / 2, (int)realPt.Y - height / 2, width, height);
+                    var intersection = roi & new openCV.Rect(0, 0, image.Width, image.Height);
+                    var inter_roi = intersection - roi.TopLeft;
+
+                    using (openCV.Mat crop = new openCV.Mat(new openCV.Size(width, height), image.Type(), 0))
+                    {
+                        image.SubMat(intersection).CopyTo(crop.SubMat(inter_roi));
+
+                        openCV.Cv2.ImWrite(filePath, crop);
+                    }
+                }
             }
         }
 
@@ -198,9 +262,12 @@ namespace ImageView
 
         private void ImageAnalysis_MouseWheel(object sender, MouseWheelEventArgs e)
         {
-            this.scale = ChangeScale(this.scale, e.Delta);
+            if (isPressedCtrl)
+            {
+                this.scale = ChangeScale(this.scale, e.Delta);
 
-            UpdateScale();
+                UpdateScale();
+            }
         }
 
         private void UpdateScale()
@@ -222,10 +289,24 @@ namespace ImageView
             this.scrollView.ScrollToVerticalOffset(h);
         }
 
-
-
+        private void imageAnalysis_KeyUp(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.LeftCtrl)
+            {
+                isPressedCtrl = false;
+            }
+            if (e.Key == Key.LeftShift)
+            {
+                isPressedShift = false;
+            }
+        }
         private void imageAnalysis_KeyDown(object sender, KeyEventArgs e)
         {
+            if(NumericKeys.ContainsKey(e.Key))
+            {
+                //number
+                cropLabel.Text = NumericKeys[e.Key].ToString();
+            }
             if (e.Key == Key.Add)
             {
                 this.scale = ChangeScale(this.scale, 1);
@@ -257,28 +338,34 @@ namespace ImageView
                 Angle.Content = angle.ToString();
                 RotateImage(90);
             }
-            if (Keyboard.IsKeyDown(Key.LeftCtrl) && Keyboard.IsKeyDown(Key.S))
+            if (Keyboard.IsKeyDown(Key.LeftCtrl) )
             {
-                if (this.image != null)
+                isPressedCtrl = true;
+                if (Keyboard.IsKeyDown(Key.S))
                 {
-                    SaveFileDialog sfd = new SaveFileDialog();
-                    
-                    sfd.RestoreDirectory = true;
-                    sfd.FileName = this.fileName;
-                    sfd.Filter = $"*{Path.GetExtension(this.fileName)}|*{Path.GetExtension(this.fileName)}";
-                    var trn = sfd.ShowDialog(this);
-                    if(trn != null && trn==true)
+                    if (this.image != null)
                     {
-                        openCV.Cv2.ImWrite(sfd.FileName, this.image);
+                        SaveFileDialog sfd = new SaveFileDialog();
+
+                        sfd.RestoreDirectory = true;
+                        sfd.FileName = this.fileName;
+                        sfd.Filter = $"*{Path.GetExtension(this.fileName)}|*{Path.GetExtension(this.fileName)}";
+                        var trn = sfd.ShowDialog(this);
+                        if (trn != null && trn == true)
+                        {
+                            openCV.Cv2.ImWrite(sfd.FileName, this.image);
+                        }
                     }
                 }
+            }
+            if (Keyboard.IsKeyDown(Key.LeftShift))
+            {
+                isPressedShift = true;
             }
 
 
 
-
-
-                ZoomString.Content = string.Format("{0}%", this.scale);
+            ZoomString.Content = string.Format("{0}%", this.scale);
 
             //var delta = this.scale / 100;
 
@@ -356,8 +443,11 @@ namespace ImageView
         {
             if (scrollView.IsMouseCaptured)
             {
-                scrollView.ScrollToHorizontalOffset(HorizontalOff1 + (ScrollMousePoint1.X - e.GetPosition(scrollView).X));
-                scrollView.ScrollToVerticalOffset(VerticalOff1 + (ScrollMousePoint1.Y - e.GetPosition(scrollView).Y));
+                if (!isPressedShift)
+                {
+                    scrollView.ScrollToHorizontalOffset(HorizontalOff1 + (ScrollMousePoint1.X - e.GetPosition(scrollView).X));
+                    scrollView.ScrollToVerticalOffset(VerticalOff1 + (ScrollMousePoint1.Y - e.GetPosition(scrollView).Y));
+                }
             }
         }
 
@@ -379,6 +469,18 @@ namespace ImageView
                 string[] files = (string[])e.Data.GetData(DataFormats.FileDrop);
                 if(files.Length > 0)
                     LoadImage(files[0]);
+            }
+        }
+        private void CropFolderPath_Clicked(object sender, RoutedEventArgs e)
+        {
+            //openfolderdialog
+            FolderBrowserDialog folderBrowserDialog = new FolderBrowserDialog();
+            folderBrowserDialog.Title = "Select a image";
+            //folderBrowserDialog.InitialFolder = @"C:\";
+            folderBrowserDialog.AllowMultiSelect = false;
+            if (folderBrowserDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            {
+                cropSaveFolderPath.Text = folderBrowserDialog.SelectedFolder;
             }
         }
     }
