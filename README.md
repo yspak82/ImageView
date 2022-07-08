@@ -5,7 +5,13 @@ WPF Image View Control
 
 **File Open** - Drag and drop file into main window
 
-**Zoom In/out** - Mouse wheel or key down(+,-)
+**File Save** - Ctrl + s
+
+**Crop Image** - Shift + Mouse left down
+
+**label change** - Number key down or Change Label Text
+
+**Zoom In/out** - Ctrl + Mouse wheel or key down(+,-)
 
 **Move** - Mouse left down and move
 
