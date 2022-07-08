@@ -120,13 +120,13 @@ Loaded="MainWindow_Loaded"
                             >
 
                     </Image>
-                    <Line x:Name="vcross" X1="0" Y1="100" X2="0" Y2="120" Stroke="Yellow" StrokeThickness="1"/>
-                    <Line x:Name="hcross" X1="100" Y1="0" X2="120" Y2="0" Stroke="Yellow" StrokeThickness="1"/>
+                    <Line x:Name="vcross" X1="0" Y1="100" X2="0" Y2="120" Stroke="Yellow" StrokeThickness="0.5" IsHitTestVisible="False"/>
+                    <Line x:Name="hcross" X1="100" Y1="0" X2="120" Y2="0" Stroke="Yellow" StrokeThickness="0.5" IsHitTestVisible="False"/>
 
                 </Canvas>
             </ScrollViewer>
-            <Line x:Name="vcross1" X1="0" Y1="0" X2="0" Y2="100000" Stroke="Red" StrokeThickness="1" Opacity="0.5"/>
-            <Line x:Name="hcross1" X1="0" Y1="0" X2="100000" Y2="0" Stroke="Red" StrokeThickness="1" Opacity="0.5"/>
+            <Line x:Name="vcross1" X1="0" Y1="0" X2="0" Y2="100000" Stroke="Red" StrokeThickness="1" Opacity="0.5" IsHitTestVisible="False"/>
+            <Line x:Name="hcross1" X1="0" Y1="0" X2="100000" Y2="0" Stroke="Red" StrokeThickness="1" Opacity="0.5" IsHitTestVisible="False"/>
         </Grid>
         
         <Grid Grid.Row="0" Width="auto" Height="50"  HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,20,20" Background="LightGray" Opacity="0.8">            

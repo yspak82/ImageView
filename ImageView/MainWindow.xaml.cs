@@ -180,7 +180,7 @@ namespace ImageView
                 DrawCross(this.rightDownPt.X, this.rightDownPt.Y, this.scale);
 
             }
-            if(isPressedShift)
+            else if(e.LeftButton == MouseButtonState.Pressed && isPressedShift)
             {
                 //cropSaveFolderPath.Text = $"{realPt.X},{realPt.Y}";
                 //Crop and SaveImage
