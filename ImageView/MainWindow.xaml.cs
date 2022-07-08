@@ -202,8 +202,22 @@ namespace ImageView
                     using (openCV.Mat crop = new openCV.Mat(new openCV.Size(width, height), image.Type(), 0))
                     {
                         image.SubMat(intersection).CopyTo(crop.SubMat(inter_roi));
-
-                        openCV.Cv2.ImWrite(filePath, crop);
+                        using (openCV.Mat dstCrop = new openCV.Mat(crop.Size(), openCV.MatType.CV_8UC3, 0))
+                        {
+                            if (crop.Type() == openCV.MatType.CV_8UC1)
+                            {
+                                openCV.Cv2.CvtColor(crop, dstCrop, openCV.ColorConversionCodes.GRAY2BGR);
+                            }
+                            else if (crop.Type() == openCV.MatType.CV_8UC4)
+                            {
+                                openCV.Cv2.CvtColor(crop, dstCrop, openCV.ColorConversionCodes.BGRA2BGR);
+                            }
+                            else
+                            {
+                                crop.CopyTo(dstCrop);
+                            }
+                            openCV.Cv2.ImWrite(filePath, dstCrop);
+                        }
                     }
                 }
             }
