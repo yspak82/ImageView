@@ -229,7 +229,7 @@ namespace ImageView
                 int index = (int)y * bufferStride + (int)(this.bit / 8 * x) + --step;
                 if (index < 0 || buffer.Length < index)
                     continue;
-                var val = buffer[(int)y * bufferStride + (int)(this.bit / 8 * x) + --step];
+                var val = buffer[index];
                 switch (step)
                 {
                     case 3:                        
