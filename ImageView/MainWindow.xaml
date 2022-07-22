@@ -118,7 +118,20 @@ Loaded="MainWindow_Loaded"
                             VerticalAlignment="Center"
                             HorizontalAlignment="Center"
                             >
-
+                        <Image.ContextMenu>
+                            <ContextMenu>                                
+                                <MenuItem                                    
+                            Name="AddStart"                            
+                            Header="잘라내기 시작점 추가"/>
+                                <MenuItem                                    
+                            Name="AddEnd"                            
+                            Header="잘라내기 종료점 추가"/>
+                                <Separator />
+                                <MenuItem
+                            Name="RunProcess"                            
+                            Header="잘라내기 시작"/>
+                            </ContextMenu>
+                        </Image.ContextMenu>
                     </Image>
                     <Line x:Name="vcross" X1="0" Y1="100" X2="0" Y2="120" Stroke="Yellow" StrokeThickness="0.5" IsHitTestVisible="False"/>
                     <Line x:Name="hcross" X1="100" Y1="0" X2="120" Y2="0" Stroke="Yellow" StrokeThickness="0.5" IsHitTestVisible="False"/>
@@ -128,7 +141,8 @@ Loaded="MainWindow_Loaded"
             <Line x:Name="vcross1" X1="0" Y1="0" X2="0" Y2="100000" Stroke="Red" StrokeThickness="1" Opacity="0.5" IsHitTestVisible="False"/>
             <Line x:Name="hcross1" X1="0" Y1="0" X2="100000" Y2="0" Stroke="Red" StrokeThickness="1" Opacity="0.5" IsHitTestVisible="False"/>
         </Grid>
-        
+        <Label Name="StartPointString" Grid.Row="0" HorizontalAlignment="Left" VerticalAlignment="Top"/>
+        <Label Name="EndPointString" Grid.Row="0" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="0,20,0,0"/>
         <Grid Grid.Row="0" Width="auto" Height="50"  HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,20,20" Background="LightGray" Opacity="0.8">            
             <Grid.RowDefinitions>
                 <RowDefinition/>

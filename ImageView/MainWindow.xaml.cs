@@ -15,7 +15,7 @@ using System.Diagnostics;
 using FolderBrowserEx;
 using System.Text.RegularExpressions;
 using System.Globalization;
-
+using System.Threading.Tasks;
 
 namespace ImageView
 {
@@ -36,6 +36,7 @@ namespace ImageView
         int fileIndex = 0;
         openCV.Mat image;
         string fileName = string.Empty;
+        string filePath = string.Empty;
         bool isPressedCtrl = false;
         bool isPressedShift = false;
         private static readonly IDictionary<Key, int> NumericKeys =
@@ -88,10 +89,68 @@ namespace ImageView
             imageAnalysis.SizeChanged += ImageAnalysis_SizeChanged;
             scrollView.ScrollChanged += ScrollView_ScrollChanged;
 
+            AddStart.Click += AddStart_Click;
+            AddEnd.Click += AddEnd_Click;
+            RunProcess.Click += RunProcess_Click;
+
             var args = Environment.GetCommandLineArgs();
             if (args.Length > 1)
                 LoadImage(args[1]);
         }
+
+        private void RunProcess_Click(object sender, RoutedEventArgs e)
+        {
+            if (AddEnd.IsChecked && AddStart.IsChecked)
+            {
+                if (MessageBox.Show("시작점부터 종료점까지 잘라내기를 진행하시겠습니까?", "", MessageBoxButton.YesNo) == MessageBoxResult.No)
+                    return;
+                int startX = Convert.ToInt32(StartPointString.Content.ToString().Split(',')[0]);
+                int startY = Convert.ToInt32(StartPointString.Content.ToString().Split(',')[1]);
+
+                int endX = Convert.ToInt32(EndPointString.Content.ToString().Split(',')[0]);
+                int endY = Convert.ToInt32(EndPointString.Content.ToString().Split(',')[1]);
+
+                //string folderPath = Path.Combine(cropSaveFolderPath.Text, "cropped");
+                string folderPath = Path.Combine(Path.GetDirectoryName(filePath), "cropped");
+                int width = int.Parse(cropWidth.Text);
+                int height = int.Parse(cropHeight.Text);
+
+                //Console.WriteLine($"{startX},{startY}");
+                var cropCount = (endY - startY) / height;
+                var gapX = (endX - startX) / (cropCount == 0 ? 1 : cropCount);
+
+                Task.Run(() =>
+                {
+                    //for (int newY = startY; newY < endY; newY = newY + height)
+                    for(int i = 0; i<= cropCount; i++)
+                    {
+                        var newX = startX + (i * gapX);
+                        var newY = startY + (i * height);
+                        CropAndSaveImage(new Point(newX, newY), width, height, folderPath);
+                    }
+
+                }).ContinueWith(r => {
+                    MessageBox.Show("잘라내기가 완료되었습니다.", "", MessageBoxButton.OK);
+                });
+            }
+            else
+            {
+                MessageBox.Show("시작점과 종료점을 설정해주세요.", "", MessageBoxButton.OK);
+            }
+        }
+
+        private void AddEnd_Click(object sender, RoutedEventArgs e)
+        {
+            AddEnd.IsChecked = true;
+            EndPointString.Content = this.rightDownPt.ToString();
+        }
+
+        private void AddStart_Click(object sender, RoutedEventArgs e)
+        {
+            AddStart.IsChecked = true;
+            StartPointString.Content = this.rightDownPt.ToString();
+        }
+
         private void LoadImage(string filePath)
         {
             string[] extensions = new[] { ".jpg", ".jpeg", ".png",".bmp",".tif" };
@@ -111,6 +170,7 @@ namespace ImageView
             sw.Start();
             this.Title = $"ImageView - {filePath}";
             this.fileName = Path.GetFileName(filePath);
+            this.filePath = filePath;
             if (image != null)
             {
                 image.Dispose();
@@ -184,45 +244,48 @@ namespace ImageView
             {
                 //cropSaveFolderPath.Text = $"{realPt.X},{realPt.Y}";
                 //Crop and SaveImage
-                string folderPath = Path.Combine(cropSaveFolderPath.Text, cropLabel.Text);
-                if (!Directory.Exists(folderPath))
-                    Directory.CreateDirectory(folderPath);
-                string timestamp = DateTime.UtcNow.ToString("yyyyMMdd-HHmmss-fff",
-                                            CultureInfo.InvariantCulture);
-                string filePath = Path.Combine(folderPath, $"{timestamp}.png");
-                int width = int.Parse(cropWidth.Text);
-                int height = int.Parse(cropHeight.Text);
+                CropAndSaveImage(realPt, int.Parse(cropWidth.Text), int.Parse(cropHeight.Text), Path.Combine(cropSaveFolderPath.Text, cropLabel.Text));
+            }
+        }
+        void CropAndSaveImage(Point realPt, int width, int height, string folderPath)
+        {
+            //string folderPath = Path.Combine(cropSaveFolderPath.Text, cropLabel.Text);
+            if (!Directory.Exists(folderPath))
+                Directory.CreateDirectory(folderPath);
+            string timestamp = DateTime.UtcNow.ToString("yyyyMMdd-HHmmss-fff",
+                                        CultureInfo.InvariantCulture);
+            string filePath = Path.Combine(folderPath, $"{timestamp}.png");
+            //int width = int.Parse(cropWidth.Text);
+            //int height = int.Parse(cropHeight.Text);
 
-                if (width > 0 && height > 0)
+            if (width > 0 && height > 0)
+            {
+                var roi = new openCV.Rect((int)realPt.X - width / 2, (int)realPt.Y - height / 2, width, height);
+                var intersection = roi & new openCV.Rect(0, 0, image.Width, image.Height);
+                var inter_roi = intersection - roi.TopLeft;
+
+                using (openCV.Mat crop = new openCV.Mat(new openCV.Size(width, height), image.Type(), 0))
                 {
-                    var roi = new openCV.Rect((int)realPt.X - width / 2, (int)realPt.Y - height / 2, width, height);
-                    var intersection = roi & new openCV.Rect(0, 0, image.Width, image.Height);
-                    var inter_roi = intersection - roi.TopLeft;
-
-                    using (openCV.Mat crop = new openCV.Mat(new openCV.Size(width, height), image.Type(), 0))
+                    image.SubMat(intersection).CopyTo(crop.SubMat(inter_roi));
+                    using (openCV.Mat dstCrop = new openCV.Mat(crop.Size(), openCV.MatType.CV_8UC3, 0))
                     {
-                        image.SubMat(intersection).CopyTo(crop.SubMat(inter_roi));
-                        using (openCV.Mat dstCrop = new openCV.Mat(crop.Size(), openCV.MatType.CV_8UC3, 0))
+                        if (crop.Type() == openCV.MatType.CV_8UC1)
                         {
-                            if (crop.Type() == openCV.MatType.CV_8UC1)
-                            {
-                                openCV.Cv2.CvtColor(crop, dstCrop, openCV.ColorConversionCodes.GRAY2BGR);
-                            }
-                            else if (crop.Type() == openCV.MatType.CV_8UC4)
-                            {
-                                openCV.Cv2.CvtColor(crop, dstCrop, openCV.ColorConversionCodes.BGRA2BGR);
-                            }
-                            else
-                            {
-                                crop.CopyTo(dstCrop);
-                            }
-                            openCV.Cv2.ImWrite(filePath, dstCrop);
+                            openCV.Cv2.CvtColor(crop, dstCrop, openCV.ColorConversionCodes.GRAY2BGR);
                         }
+                        else if (crop.Type() == openCV.MatType.CV_8UC4)
+                        {
+                            openCV.Cv2.CvtColor(crop, dstCrop, openCV.ColorConversionCodes.BGRA2BGR);
+                        }
+                        else
+                        {
+                            crop.CopyTo(dstCrop);
+                        }
+                        openCV.Cv2.ImWrite(filePath, dstCrop);
                     }
                 }
             }
         }
-
         private void ImageAnalysis_MouseMove(object sender, MouseEventArgs e)
         {
 
