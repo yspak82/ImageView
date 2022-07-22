@@ -122,11 +122,17 @@ namespace ImageView
                 Task.Run(() =>
                 {
                     //for (int newY = startY; newY < endY; newY = newY + height)
-                    for(int i = 0; i<= cropCount; i++)
+                    //for(int i = 0; i<= cropCount; i++)
+                    //{
+                    //    var newX = startX + (i * gapX);
+                    //    var newY = startY + (i * height);
+                    //    CropAndSaveImage(new Point(newX, newY), width, height, folderPath);
+                    //}
+                    for (int Y = 0; Y < image.Height - height; Y += (height / 2))
                     {
-                        var newX = startX + (i * gapX);
-                        var newY = startY + (i * height);
-                        CropAndSaveImage(new Point(newX, newY), width, height, folderPath);
+                        int X = endX - startX == 0 ? startX : (Y - startY) / ((endY - startY) / (endX - startX)) + startX;
+                        //CropAndSaveImage(new Point(X + width / 2, Y), width, height, folderPath);
+                        CropAndSaveImage(new Point(X, Y), width, height, folderPath);
                     }
 
                 }).ContinueWith(r => {
